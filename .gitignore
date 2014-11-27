@@ -3,3 +3,6 @@
 target
 .cache
 *.prefs
+.project
+.classpath
+

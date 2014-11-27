@@ -10,6 +10,8 @@ import minderengine.IMinderServer
 /**
  * The entry point for a minder client application.
  */
-object MinderClientApp extends App {
-  val minderClient  = new MinderClient
+object MinderClientApp {
+  def main(args: Array[String]) {
+    val minderClient = new MinderClient
+  }
 }
