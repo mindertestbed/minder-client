@@ -1,29 +1,33 @@
 package gov.tubitak.minder.client
 
-import minderengine._
 import java.lang.reflect.Method
+import java.util
 import java.util.HashMap
-import org.interop.xoola.core.XoolaProperty
-import org.interop.xoola.core.Xoola
-import org.interop.xoola.core.XoolaTierMode
+
+import minderengine._
+import org.interop.xoola.core.{Xoola, XoolaTierMode, XoolaProperty}
 
 class MinderClient extends IMinderClient with ISignalHandler {
   //load application properties
   val properties = new java.util.Properties();
-  properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
-  properties.setProperty(XoolaProperty.CLIENTID, properties.getProperty("GUID"))
   properties load this.getClass().getResourceAsStream("/app.properites")
+  properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
+  val guid = properties.getProperty("GUID")
+  properties.setProperty(XoolaProperty.CLIENTID, guid)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
   val clazz: Class[Wrapper] = Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
   val wrapper = MinderUtils.createWrapper(clazz, this)
-  client registerObject ("minderClient", this)
+  client registerObject("minderClient", this)
   println("Connecting to server")
-  client start ()
-  client waitForConnection ()
+  client start()
+  client waitForConnection()
+
+  var sessionId: String = null
+
 
   val serverObject: IMinderServer = client.get(classOf[IMinderServer], "minderServer")
-  val asyncServerObject: IMinderServer = client.get(classOf[IMinderServer], "minderServer", true)
+  val nonBlockingServerObject: IMinderServer = client.get(classOf[IMinderServer], "minderServer", true)
 
   //Map all the methods that are annotated as signals and slots.
   //this will be presented to the server. This is good to perform method resolution only once
@@ -32,25 +36,56 @@ class MinderClient extends IMinderClient with ISignalHandler {
     method <- clazz.getMethods() //
     if method.getAnnotation(classOf[Signal]) != null || method.getAnnotation(classOf[Slot]) != null
   ) {
-    var mc = new MethodContainer(method)
-    methodMap put (mc.methodKey, mc)
+    val mc = new MethodContainer(method)
+    methodMap put(mc.methodKey, mc)
   }
 
   //send the information to the server
-  serverObject hello methodMap
+  var keySet = new util.HashSet[MethodContainer]();
+
+  import scala.collection.JavaConversions._
+
+  for (x <-  methodMap.values()) {
+    keySet add x
+  }
+  serverObject hello(guid, keySet)
 
   /**
+   * getCurrentTestUserInfo
    * the server will call this method. The method performs name resolution and calls
    * the appropriate slot
    */
-  override def callSlot(slotName: String, args: Array[Object]) : Object = {
+  override def callSlot(sId: String, slotName: String, args: Array[Object]): Object = {
+    checkSession(sId)
+
     methodMap.get(slotName).method.invoke(wrapper, args)
+  }
+
+  def checkSession(sId: String) {
+    if (sessionId == null || !(sessionId equals (sId))) {
+      throw new MinderException(MinderException.E_INVALID_SESSION)
+    }
   }
 
   /**
    * The SUT is emitting a signal, lets invoke the server
    */
-  override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]) = {
-    asyncServerObject signalEmitted (MethodContainer.generateMethodKey(signalMethod), args);
+  override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
+    checkSession(sessionId);
+    if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
+      nonBlockingServerObject.getUserInfo(sessionId)
+    } else {
+      nonBlockingServerObject signalEmitted(sessionId, guid, MethodContainer.generateMethodKey(signalMethod), new SignalData(args));
+    }
+  }
+
+  override def startTest(sessionId: String): Unit = {
+    this sessionId = sessionId
+    wrapper startTest
+  }
+
+  override def finishTest(): Unit = {
+    wrapper finishTest;
+    this sessionId = null
   }
 }
