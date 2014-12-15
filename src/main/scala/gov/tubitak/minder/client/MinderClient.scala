@@ -48,7 +48,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   for (x <-  methodMap.values()) {
     keySet add x
   }
-  serverObject hello(guid, keySet)
+  serverObject hello(guid, wrapper.getLabel, keySet)
 
   /**
    * getCurrentTestUserInfo
@@ -57,8 +57,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
    */
   override def callSlot(sId: String, slotName: String, args: Array[Object]): Object = {
     checkSession(sId)
-
-    methodMap.get(slotName).method.invoke(wrapper, args)
+    methodMap.get(slotName).method.invoke(wrapper, args: _*)
   }
 
   def checkSession(sId: String) {
