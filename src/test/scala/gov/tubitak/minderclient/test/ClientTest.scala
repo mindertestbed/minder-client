@@ -1,15 +1,13 @@
 package gov.tubitak.minderclient.test
 
-import org.junit.runner.RunWith
-import org.specs2.runner.JUnitRunner
-import org.specs2.Specification
-
 import javax.script._
 import scala.tools.nsc._
 
 object ClientTest {
   def main(args: Array[String]) {
-    var i = new Interpreter(new Settings(str => println(str)))
+    val st = new Settings(str => println(str));
+    st.usejavacp.value = true;
+    val i = new Interpreter(st)
     i.interpret("class Test { def hello = \"Hello World\"}")
 
     var res = Array[AnyRef](null)
