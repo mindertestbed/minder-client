@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.scala-lang" % "scala-compiler" % "2.11.4",
   "log4j" % "log4j" % "1.2.16",
   "org.specs2" %% "specs2-junit" % "2.3.12",
-  "org.beybunproject" % "xoola" % "1.0.0-RC2",
+  "org.beybunproject" % "xoola" % "1.0.0-RC3",
   "gov.tubitak.minder" % "minder-common" % "0.0.3",
   "com.xyz" % "sample-gw-wrapper" % "0.0.1" % "test"
 )
