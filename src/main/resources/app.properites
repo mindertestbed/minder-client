@@ -1,5 +1,5 @@
-GUID=1d87d345-1ad3-42cc-903a-4a0d400b27cb
-HOST=localhost
+WRAPPER_NAME=sampleWrapper
+HOST=eidrepo
 PORT=25000
 SERVERID=minderServer
 PING_TIMEOUT=20
