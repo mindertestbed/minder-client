@@ -1,18 +1,51 @@
 package gov.tubitak.minderclient.test
 
-import javax.script._
-import scala.tools.nsc._
+import scala.collection._
 
 object ClientTest {
-  def main(args: Array[String]) {
-    val st = new Settings(str => println(str));
-    st.usejavacp.value = true;
-    val i = new Interpreter(st)
-    i.interpret("class Test { def hello = \"Hello World\"}")
+  def main2(args: Array[String]) {
+    val set = mutable.Set[String]();
+    set += "A"
+    set += "B"
+    set += "C"
+    set += "D"
+    set.map{ str => println(str) }
 
-    var res = Array[AnyRef](null)
-    i.bind("result", "Array[AnyRef]", res)
-    i.interpret("result(0) = new Test")
-    println(res)
+    set += "A"
+    set.map{ str => println(str) }
+
+
+    println(Map.getClass)
+
+  }
+
+
+
+
+  def main(args: Array[String]) {
+    val set = mutable.LinkedHashMap[String,String]();
+
+    set += "A" -> "AA"
+    set += "B" -> "BB"
+    set += "C" -> "CC"
+    set += "D" -> "DD"
+
+    set.map{
+      str =>
+        println(str)
+    }
+
+    println("===")
+
+    set += "A" -> "XXX"
+
+    set.map{str =>
+      println(str)
+    }
+
+
+    for((k,v) <- set){
+      println(k + "::::" + v)
+    }
   }
 }

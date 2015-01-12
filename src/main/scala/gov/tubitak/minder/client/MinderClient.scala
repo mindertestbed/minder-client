@@ -12,8 +12,8 @@ class MinderClient extends IMinderClient with ISignalHandler {
   val properties = new java.util.Properties();
   properties load this.getClass().getResourceAsStream("/app.properites")
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
-  val guid = properties.getProperty("GUID")
-  properties.setProperty(XoolaProperty.CLIENTID, guid)
+  val wrapperName = properties.getProperty("WRAPPER_NAME")
+  properties.setProperty(XoolaProperty.CLIENTID, wrapperName)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
   val clazz: Class[Wrapper] = Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
@@ -48,7 +48,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   for (x <-  methodMap.values()) {
     keySet add x
   }
-  serverObject hello(guid, wrapper.getLabel, keySet)
+  serverObject hello(wrapperName, keySet)
 
   /**
    * getCurrentTestUserInfo
@@ -74,7 +74,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
       nonBlockingServerObject.getUserInfo(sessionId)
     } else {
-      nonBlockingServerObject signalEmitted(sessionId, guid, MethodContainer.generateMethodKey(signalMethod), new SignalData(args));
+      nonBlockingServerObject signalEmitted(sessionId, wrapperName, MethodContainer.generateMethodKey(signalMethod), new SignalData(args));
     }
   }
 
