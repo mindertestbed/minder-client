@@ -1,5 +1,6 @@
 package gov.tubitak.minder.client
 
+import java.io.FileInputStream
 import java.lang.reflect.Method
 import java.util
 import java.util.HashMap
@@ -10,7 +11,16 @@ import org.interop.xoola.core.{Xoola, XoolaTierMode, XoolaProperty}
 class MinderClient extends IMinderClient with ISignalHandler {
   //load application properties
   val properties = new java.util.Properties();
-  properties load this.getClass().getResourceAsStream("/app.properites")
+
+  val propertyFile = System.getProperty("propertyFile")
+  if (propertyFile != null) {
+    println("Reading properties from alternate locatiom: " + propertyFile)
+    val ins = new FileInputStream(propertyFile)
+    properties load ins;
+    ins.close()
+  } else {
+    properties load this.getClass().getResourceAsStream("/app.properites")
+  }
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
   val wrapperName = properties.getProperty("WRAPPER_NAME")
   properties.setProperty(XoolaProperty.CLIENTID, wrapperName)
@@ -45,7 +55,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
 
   import scala.collection.JavaConversions._
 
-  for (x <-  methodMap.values()) {
+  for (x <- methodMap.values()) {
     keySet add x
   }
   serverObject hello(wrapperName, keySet)
