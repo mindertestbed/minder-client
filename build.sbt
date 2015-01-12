@@ -2,7 +2,7 @@ organization := "gov.tubitak.minder"
 
 name := "minder-client"
 
-version := "0.0.1"
+version := "0.0.2"
 
 resolvers += "Eid public repository" at "http://eidrepo:8081/nexus/content/groups/public/"
 
