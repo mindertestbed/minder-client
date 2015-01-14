@@ -6,7 +6,7 @@ import java.util
 import java.util.HashMap
 
 import minderengine._
-import org.interop.xoola.core.{Xoola, XoolaTierMode, XoolaProperty}
+import org.interop.xoola.core._
 
 class MinderClient extends IMinderClient with ISignalHandler {
   //load application properties
@@ -30,35 +30,51 @@ class MinderClient extends IMinderClient with ISignalHandler {
   val wrapper = MinderUtils.createWrapper(clazz, this)
   client registerObject("minderClient", this)
   println("Connecting to server")
-  client start()
-  client waitForConnection()
-
-  var sessionId: String = null
 
 
-  val serverObject: IMinderServer = client.get(classOf[IMinderServer], "minderServer")
-  val nonBlockingServerObject: IMinderServer = client.get(classOf[IMinderServer], "minderServer", true)
+  var serverObject: IMinderServer = null;
+  var nonBlockingServerObject: IMinderServer = null;
 
   //Map all the methods that are annotated as signals and slots.
   //this will be presented to the server. This is good to perform method resolution only once
-  val methodMap: HashMap[String, MethodContainer] = new HashMap[String, MethodContainer]()
-  for (
-    method <- clazz.getMethods() //
-    if method.getAnnotation(classOf[Signal]) != null || method.getAnnotation(classOf[Slot]) != null
-  ) {
-    val mc = new MethodContainer(method)
-    methodMap put(mc.methodKey, mc)
-  }
+  var methodMap: HashMap[String, MethodContainer] = null;
 
-  //send the information to the server
-  var keySet = new util.HashSet[MethodContainer]();
+  client.addConnectionListener(new XoolaConnectionListener {
+    override def connected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
+      serverObject = client.get(classOf[IMinderServer], "minderServer")
+      nonBlockingServerObject  = client.get(classOf[IMinderServer], "minderServer", true)
 
-  import scala.collection.JavaConversions._
+      //Map all the methods that are annotated as signals and slots.
+      //this will be presented to the server. This is good to perform method resolution only once
+      methodMap = new HashMap[String, MethodContainer]()
+      for (
+        method <- clazz.getMethods() //
+        if method.getAnnotation(classOf[Signal]) != null || method.getAnnotation(classOf[Slot]) != null
+      ) {
+        val mc = new MethodContainer(method)
+        methodMap put(mc.methodKey, mc)
+      }
 
-  for (x <- methodMap.values()) {
-    keySet add x
-  }
-  serverObject hello(wrapperName, keySet)
+      //send the information to the server
+      val keySet = new util.HashSet[MethodContainer]();
+
+      import scala.collection.JavaConversions._
+
+      for (x <- methodMap.values()) {
+        keySet add x
+      }
+      serverObject hello(wrapperName, keySet)
+    }
+
+    override def disconnected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
+
+    }
+  })
+
+  client start()
+
+  var sessionId: String = null
+
 
   /**
    * getCurrentTestUserInfo
@@ -89,6 +105,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   }
 
   override def startTest(sessionId: String): Unit = {
+    println(wrapperName + " starttest " + sessionId)
     this sessionId = sessionId
     wrapper startTest
   }
