@@ -26,6 +26,8 @@ class MinderClient extends IMinderClient with ISignalHandler {
   properties.setProperty(XoolaProperty.CLIENTID, wrapperName)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
+  println("The wrapper Name is " + wrapperName)
+  println("The wrapper Class is " + properties.getProperty("WRAPPER_CLASS"))
   val clazz: Class[Wrapper] = Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
   val wrapper = MinderUtils.createWrapper(clazz, this)
   client registerObject("minderClient", this)
