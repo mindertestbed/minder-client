@@ -1,6 +1,6 @@
 package gov.tubitak.minder.client
 
-import java.io.FileInputStream
+import java.io.{InputStream, FileInputStream}
 import java.lang.reflect.Method
 import java.util
 import java.util.HashMap
@@ -19,7 +19,20 @@ class MinderClient extends IMinderClient with ISignalHandler {
     properties load ins;
     ins.close()
   } else {
-    properties load this.getClass().getResourceAsStream("/app.properites")
+    val res = System.getProperty("propertyResource", "wrapper.properties")
+    var url = this.getClass.getResource(res)
+
+    if (url == null) {
+      println("Minder client - Try another class loader")
+      url = Thread.currentThread().getContextClassLoader().getResource(res)
+    }
+    if (url == null) {
+      throw new IllegalArgumentException("Couldn't load wrapper properties resource [" + res + "]")
+    }
+
+    val is = url.openStream()
+    properties load is;
+    is close
   }
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
   val wrapperName = properties.getProperty("WRAPPER_NAME")
@@ -44,7 +57,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   client.addConnectionListener(new XoolaConnectionListener {
     override def connected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
       serverObject = client.get(classOf[IMinderServer], "minderServer")
-      nonBlockingServerObject  = client.get(classOf[IMinderServer], "minderServer", true)
+      nonBlockingServerObject = client.get(classOf[IMinderServer], "minderServer", true)
 
       //Map all the methods that are annotated as signals and slots.
       //this will be presented to the server. This is good to perform method resolution only once
@@ -104,6 +117,11 @@ class MinderClient extends IMinderClient with ISignalHandler {
     } else {
       nonBlockingServerObject signalEmitted(sessionId, wrapperName, MethodContainer.generateMethodKey(signalMethod), new SignalData(args));
     }
+  }
+
+  override def reportError(obj: AnyRef, signalName: String, errorMessage: String): Object = {
+    checkSession(sessionId);
+    nonBlockingServerObject signalEmitted(sessionId, wrapperName, signalName, new SignalData(null, errorMessage));
   }
 
   override def startTest(sessionId: String): Unit = {
