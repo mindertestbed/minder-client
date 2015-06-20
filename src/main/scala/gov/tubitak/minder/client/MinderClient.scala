@@ -98,7 +98,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
    */
   override def callSlot(sId: String, slotName: String, args: Array[Object]): Object = {
     checkSession(sId)
-    methodMap.get(slotName).method.invoke(wrapper, args: _*)
+    methodMap.get(slotName.replaceAll("\\s", "")).method.invoke(wrapper, args: _*)
   }
 
   def checkSession(sId: String) {
