@@ -36,10 +36,12 @@ class MinderClient extends IMinderClient with ISignalHandler {
   }
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
   val wrapperName = properties.getProperty("WRAPPER_NAME")
-  properties.setProperty(XoolaProperty.CLIENTID, wrapperName)
+  val wrapperVersion = properties.getProperty("WRAPPER_VERSION")
+  val wrapperIdentifier = wrapperName + "|" + wrapperVersion
+  properties.setProperty(XoolaProperty.CLIENTID, wrapperIdentifier)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
-  println("The wrapper Name is " + wrapperName)
+  println("The wrapper Identifier " + wrapperIdentifier)
   println("The wrapper Class is " + properties.getProperty("WRAPPER_CLASS"))
   val clazz: Class[Wrapper] = Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
   val wrapper = MinderUtils.createWrapper(clazz, this)
@@ -78,7 +80,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
       for (x <- methodMap.values()) {
         keySet add x
       }
-      serverObject hello(wrapperName, keySet)
+      serverObject hello(wrapperIdentifier, keySet)
     }
 
     override def disconnected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
@@ -115,17 +117,19 @@ class MinderClient extends IMinderClient with ISignalHandler {
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
       nonBlockingServerObject.getUserInfo(sessionId)
     } else {
-      nonBlockingServerObject signalEmitted(sessionId, wrapperName, MethodContainer.generateMethodKey(signalMethod), new SignalData(args));
+
+      //now we should check whether there is an error, or this is a regular call.
+      val error = wrapper.consumeError()
+      if (error != null) {
+        nonBlockingServerObject signalEmitted(sessionId, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
+      } else {
+        nonBlockingServerObject signalEmitted(sessionId, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
+      }
     }
   }
 
-  override def reportError(obj: AnyRef, signalName: String, errorMessage: String): Object = {
-    checkSession(sessionId);
-    nonBlockingServerObject signalEmitted(sessionId, wrapperName, signalName, new SignalData(null, errorMessage));
-  }
-
   override def startTest(sessionId: String): Unit = {
-    println(wrapperName + " starttest " + sessionId)
+    println(wrapperIdentifier + " starttest " + sessionId)
     this sessionId = sessionId
     wrapper startTest
   }
@@ -133,5 +137,9 @@ class MinderClient extends IMinderClient with ISignalHandler {
   override def finishTest(): Unit = {
     wrapper finishTest;
     this sessionId = null
+  }
+
+  override def getSUTName():String ={
+    wrapper getSUTName()
   }
 }
