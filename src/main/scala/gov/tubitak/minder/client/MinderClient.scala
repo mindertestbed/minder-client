@@ -12,7 +12,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   //load application properties
   val properties = new java.util.Properties();
 
-  val propertyFile = System.getProperty("propertyFile")
+  val propertyFile = System.getProperty("propertyFile", "wrapper.properties")
   if (propertyFile != null) {
     println("Reading properties from alternate locatiom: " + propertyFile)
     val ins = new FileInputStream(propertyFile)
