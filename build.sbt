@@ -2,9 +2,9 @@ organization := "gov.tubitak.minder"
 
 name := "minder-client"
 
-version := "0.3.0"
+version := "0.3.1"
 
-resolvers += "Eid public repository" at "http://eidrepo:8081/nexus/content/groups/public/"
+resolvers += "Eid public repository" at "http://193.140.74.199:8081/nexus/content/groups/public/"
 
 resolvers += Resolver.mavenLocal
 
@@ -14,21 +14,21 @@ javacOptions in (doc) ++= Seq("-source", "1.8")
 
 crossPaths := false
 
-scalaVersion := "2.11.6"
+scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-library" % "2.11.6",
-  "org.scala-lang" % "scala-reflect" % "2.11.6",
-  "org.scala-lang" % "scala-actors" % "2.11.6",
-  "org.scala-lang" % "scala-compiler" % "2.11.6",
+  "org.scala-lang" % "scala-library" % "2.11.7",
+  "org.scala-lang" % "scala-reflect" % "2.11.7",
+  "org.scala-lang" % "scala-actors" % "2.11.7",
+  "org.scala-lang" % "scala-compiler" % "2.11.7",
   "log4j" % "log4j" % "1.2.16",
   "org.specs2" %% "specs2-junit" % "2.3.12",
   "org.beybunproject" % "xoola" % "1.0.0",
-  "gov.tubitak.minder" % "minder-common" % "0.3.0"
+  "gov.tubitak.minder" % "minder-common" % "0.3.1"
 )
 
 
 
-publishTo := Some("eid releases" at "http://eidrepo:8081/nexus/content/repositories/releases")
+publishTo := Some("eid releases" at "http://193.140.74.199:8081/nexus/content/repositories/releases")
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")

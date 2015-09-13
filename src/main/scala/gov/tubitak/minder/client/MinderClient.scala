@@ -1,6 +1,6 @@
 package gov.tubitak.minder.client
 
-import java.io.{InputStream, FileInputStream}
+import java.io.{File, InputStream, FileInputStream}
 import java.lang.reflect.Method
 import java.util
 import java.util.HashMap
@@ -13,7 +13,7 @@ class MinderClient extends IMinderClient with ISignalHandler {
   val properties = new java.util.Properties();
 
   val propertyFile = System.getProperty("propertyFile", "wrapper.properties")
-  if (propertyFile != null) {
+  if (propertyFile != null && new File(propertyFile).exists()) {
     println("Reading properties from alternate locatiom: " + propertyFile)
     val ins = new FileInputStream(propertyFile)
     properties load ins;
