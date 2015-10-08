@@ -5,7 +5,6 @@ target
 *.prefs
 .project
 .classpath
-
 .iml
 .idea
 .DS_Store
