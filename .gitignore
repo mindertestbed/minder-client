@@ -5,8 +5,10 @@ target
 *.prefs
 .project
 .classpath
-
 .iml
 .idea
 .DS_Store
 *.DS_Store
+/bin/
+/*.cache-main
+/*.cache-tests
