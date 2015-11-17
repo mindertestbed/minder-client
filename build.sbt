@@ -2,7 +2,7 @@ organization := "gov.tubitak.minder"
 
 name := "minder-client"
 
-version := "0.3.1"
+version := "0.4.0"
 
 resolvers += "Eid public repository" at "http://193.140.74.199:8081/nexus/content/groups/public/"
 
@@ -24,7 +24,7 @@ libraryDependencies ++= Seq(
   "log4j" % "log4j" % "1.2.16",
   "org.specs2" %% "specs2-junit" % "2.3.12",
   "org.beybunproject" % "xoola" % "1.0.0",
-  "gov.tubitak.minder" % "minder-common" % "0.3.1"
+  "gov.tubitak.minder" % "minder-common" % "0.4.0"
 )
 
 
