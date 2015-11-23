@@ -36,7 +36,7 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   wrapperIdentifier.setVersion(wrapperVersion)
 
   //initialize the XOOLA protocol with wrapper name
-  properties.setProperty(XoolaProperty.CLIENTID, wrapperName + "_" + wrapperVersion)
+  properties.setProperty(XoolaProperty.CLIENTID, wrapperIdentifier.toString)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
   println("The wrapper Identifier " + wrapperIdentifier)
@@ -106,7 +106,7 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   }
 
   def checkSession(sId: TestSession) {
-    if (testSession == null || !(testSession equals (sId.getSession))) {
+    if (testSession == null || testSession != sId) {
       throw new MinderException(MinderException.E_INVALID_SESSION)
     }
   }
