@@ -1,49 +1,51 @@
 package gov.tubitak.minder.client
 
-import java.io.{InputStream, FileInputStream}
+import java.io.{File, FileInputStream}
 import java.lang.reflect.Method
 import java.util
-import java.util.HashMap
+import java.util.{HashMap, Properties}
 
 import minderengine._
 import org.interop.xoola.core._
 
-class MinderClient extends IMinderClient with ISignalHandler {
-  //load application properties
-  val properties = new java.util.Properties();
-
-  val propertyFile = System.getProperty("propertyFile")
-  if (propertyFile != null) {
-    println("Reading properties from alternate locatiom: " + propertyFile)
-    val ins = new FileInputStream(propertyFile)
-    properties load ins;
-    ins.close()
-  } else {
-    val res = System.getProperty("propertyResource", "wrapper.properties")
-    var url = this.getClass.getResource(res)
-
-    if (url == null) {
-      println("Minder client - Try another class loader")
-      url = Thread.currentThread().getContextClassLoader().getResource(res)
-    }
-    if (url == null) {
-      throw new IllegalArgumentException("Couldn't load wrapper properties resource [" + res + "]")
-    }
-
-    val is = url.openStream()
-    properties load is;
-    is close
+class MinderClient(val properties: Properties, val classLoader: ClassLoader) extends IMinderClient with ISignalHandler {
+  /**
+    * Default constructor
+    */
+  def this() {
+    this({
+      MinderClient.readProps
+    }, null)
   }
+
+  def this(properties: Properties) {
+    this(properties, null)
+  }
+
+  def this(classLoader: ClassLoader) {
+    this({
+      MinderClient.readProps
+    }, classLoader)
+  }
+
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
   val wrapperName = properties.getProperty("WRAPPER_NAME")
   val wrapperVersion = properties.getProperty("WRAPPER_VERSION")
-  val wrapperIdentifier = wrapperName + "|" + wrapperVersion
-  properties.setProperty(XoolaProperty.CLIENTID, wrapperIdentifier)
+  val wrapperIdentifier = new AdapterIdentifier()
+  wrapperIdentifier.setName(wrapperName)
+  wrapperIdentifier.setVersion(wrapperVersion)
+
+  //initialize the XOOLA protocol with wrapper name
+  properties.setProperty(XoolaProperty.CLIENTID, wrapperIdentifier.toString)
   val client = Xoola.init(properties)
   //create the minder client, providing the wrapper class name
   println("The wrapper Identifier " + wrapperIdentifier)
   println("The wrapper Class is " + properties.getProperty("WRAPPER_CLASS"))
-  val clazz: Class[Wrapper] = Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
+  val clazz: Class[Wrapper] =
+    if (classLoader == null)
+      Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
+    else
+      classLoader.loadClass(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
   val wrapper = MinderUtils.createWrapper(clazz, this)
   client registerObject("minderClient", this)
   println("Connecting to server")
@@ -90,56 +92,85 @@ class MinderClient extends IMinderClient with ISignalHandler {
 
   client start()
 
-  var sessionId: String = null
+  var testSession: TestSession = null
 
 
   /**
-   * getCurrentTestUserInfo
-   * the server will call this method. The method performs name resolution and calls
-   * the appropriate slot
-   */
-  override def callSlot(sId: String, slotName: String, args: Array[Object]): Object = {
+    * getCurrentTestUserInfo
+    * the server will call this method. The method performs name resolution and calls
+    * the appropriate slot
+    */
+  override def callSlot(sId: TestSession, slotName: String, args: Array[Object]): Object = {
     checkSession(sId)
     methodMap.get(slotName.replaceAll("\\s", "")).method.invoke(wrapper, args: _*)
   }
 
-  def checkSession(sId: String) {
-    if (sessionId == null || !(sessionId equals (sId))) {
+  def checkSession(sId: TestSession) {
+    if (testSession == null || testSession != sId) {
       throw new MinderException(MinderException.E_INVALID_SESSION)
     }
   }
 
   /**
-   * The SUT is emitting a signal, lets invoke the server
-   */
+    * The SUT is emitting a signal, lets invoke the server
+    */
   override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
-    checkSession(sessionId);
+    checkSession(testSession);
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
-      nonBlockingServerObject.getUserInfo(sessionId)
+      nonBlockingServerObject.getUserInfo(testSession)
     } else {
 
       //now we should check whether there is an error, or this is a regular call.
       val error = wrapper.consumeError()
       if (error != null) {
-        nonBlockingServerObject signalEmitted(sessionId, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
+        nonBlockingServerObject signalEmitted(testSession, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
       } else {
-        nonBlockingServerObject signalEmitted(sessionId, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
+        nonBlockingServerObject signalEmitted(testSession, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
       }
     }
   }
 
-  override def startTest(sessionId: String): Unit = {
-    println(wrapperIdentifier + " starttest " + sessionId)
-    this sessionId = sessionId
-    wrapper startTest
+  override def startTest(startTestObject: StartTestObject): Unit = {
+    println(wrapperIdentifier + " starttest " + startTestObject.getSession.getSession)
+    this testSession =  startTestObject.getSession
+    wrapper startTest startTestObject
   }
 
-  override def finishTest(): Unit = {
-    wrapper finishTest;
-    this sessionId = null
+  override def finishTest(finishTestObject: FinishTestObject): Unit = {
+    wrapper finishTest finishTestObject;
+    this testSession = null
   }
 
-  override def getSUTName():String ={
-    wrapper getSUTName()
+  override def getSUTIdentifiers(): SUTIdentifiers = {
+    wrapper getSUTIdentifiers
+  }
+}
+
+object MinderClient {
+  def readProps: Properties = {
+    val propertyFile = System.getProperty("propertyFile", "wrapper.properties")
+    val props = new Properties()
+    if (propertyFile != null && new File(propertyFile).exists()) {
+      println("Reading properties from alternate locatiom: " + propertyFile)
+      val ins = new FileInputStream(propertyFile)
+      props load ins;
+      ins.close()
+    } else {
+      val res = System.getProperty("propertyResource", "wrapper.properties")
+      var url = classOf[MinderClient].getResource(res)
+
+      if (url == null) {
+        println("Minder client - Try another class loader")
+        url = Thread.currentThread().getContextClassLoader().getResource(res)
+      }
+      if (url == null) {
+        throw new scala.IllegalArgumentException("Couldn't load wrapper properties resource [" + res + "]")
+      }
+
+      val is = url.openStream()
+      props load is;
+      is close
+    }
+    props
   }
 }
