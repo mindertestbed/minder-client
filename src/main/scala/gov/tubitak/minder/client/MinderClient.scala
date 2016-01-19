@@ -133,16 +133,16 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   override def startTest(startTestObject: StartTestObject): Unit = {
     println(wrapperIdentifier + " starttest " + startTestObject.getSession.getSession)
     this testSession =  startTestObject.getSession
-    wrapper startTest
+    wrapper startTest startTestObject
   }
 
   override def finishTest(finishTestObject: FinishTestObject): Unit = {
-    wrapper finishTest;
+    wrapper finishTest finishTestObject;
     this testSession = null
   }
 
-  override def getSUTIdentifier(): SUTIdentifier = {
-    wrapper getSUTIdentifier
+  override def getSUTIdentifiers(): SUTIdentifiers = {
+    wrapper getSUTIdentifiers
   }
 }
 
