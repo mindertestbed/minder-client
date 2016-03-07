@@ -9,6 +9,8 @@ import minderengine._
 import org.interop.xoola.core._
 
 class MinderClient(val properties: Properties, val classLoader: ClassLoader) extends IMinderClient with ISignalHandler {
+
+  val currentSession = new ThreadLocal[String]
   /**
     * Default constructor
     */
@@ -100,8 +102,9 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     * the server will call this method. The method performs name resolution and calls
     * the appropriate slot
     */
-  override def callSlot(sId: TestSession, slotName: String, args: Array[Object]): Object = {
-    checkSession(sId)
+  override def callSlot(testSession: TestSession, slotName: String, args: Array[Object]): Object = {
+    checkSession(testSession)
+    wrapper.setSessionId(testSession.getSession)
     methodMap.get(slotName.replaceAll("\\s", "")).method.invoke(wrapper, args: _*)
   }
 
