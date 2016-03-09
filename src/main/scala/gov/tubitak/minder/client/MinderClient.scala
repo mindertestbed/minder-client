@@ -119,10 +119,15 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     */
   override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
     checkSession(testSession);
+    if (null == wrapper.getSessionId){
+      testSession.setSession(wrapper.getDefaultSession)
+    }else{
+      testSession.setSession(wrapper.getSessionId)
+    }
+
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
       nonBlockingServerObject.getUserInfo(testSession)
     } else {
-
       //now we should check whether there is an error, or this is a regular call.
       val error = wrapper.consumeError()
       if (error != null) {
@@ -136,6 +141,7 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   override def startTest(startTestObject: StartTestObject): Unit = {
     println(wrapperIdentifier + " starttest " + startTestObject.getSession.getSession)
     this testSession =  startTestObject.getSession
+    wrapper.setDefaultSession(testSession.getSession)
     wrapper startTest startTestObject
   }
 
