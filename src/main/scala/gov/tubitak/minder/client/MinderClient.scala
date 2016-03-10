@@ -11,6 +11,7 @@ import org.interop.xoola.core._
 class MinderClient(val properties: Properties, val classLoader: ClassLoader) extends IMinderClient with ISignalHandler {
 
   val currentSession = new ThreadLocal[String]
+
   /**
     * Default constructor
     */
@@ -109,9 +110,9 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   }
 
   def checkSession(sId: TestSession) {
-    if (testSession == null || testSession != sId) {
-      throw new MinderException(MinderException.E_INVALID_SESSION)
-    }
+    //if (testSession == null || testSession != sId) {
+    //  throw new MinderException(MinderException.E_INVALID_SESSION)
+    //}
   }
 
   /**
@@ -119,28 +120,30 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     */
   override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
     checkSession(testSession);
-    if (null == wrapper.getSessionId){
-      testSession.setSession(wrapper.getDefaultSession)
-    }else{
-      testSession.setSession(wrapper.getSessionId)
+    val temp = if (null != wrapper.getSessionId) {
+      new TestSession(wrapper.getSessionId)
+    } else {
+      testSession;
     }
 
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
       nonBlockingServerObject.getUserInfo(testSession)
+    } else if(signalMethod getName() equals ("trigger")){
+      serverObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args))
     } else {
       //now we should check whether there is an error, or this is a regular call.
       val error = wrapper.consumeError()
       if (error != null) {
-        nonBlockingServerObject signalEmitted(testSession, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
+        nonBlockingServerObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
       } else {
-        nonBlockingServerObject signalEmitted(testSession, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
+        nonBlockingServerObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
       }
     }
   }
 
   override def startTest(startTestObject: StartTestObject): Unit = {
     println(wrapperIdentifier + " starttest " + startTestObject.getSession.getSession)
-    this testSession =  startTestObject.getSession
+    this testSession = startTestObject.getSession
     wrapper.setDefaultSession(testSession.getSession)
     wrapper startTest startTestObject
   }
