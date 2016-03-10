@@ -54,8 +54,8 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   println("Connecting to server")
 
 
-  var serverObject: IMinderServer = null;
-  var nonBlockingServerObject: IMinderServer = null;
+  var syncRemoteCaller: IMinderServer = null;
+  var asyncRemoteCaller: IMinderServer = null;
 
   //Map all the methods that are annotated as signals and slots.
   //this will be presented to the server. This is good to perform method resolution only once
@@ -63,8 +63,8 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
 
   client.addConnectionListener(new XoolaConnectionListener {
     override def connected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
-      serverObject = client.get(classOf[IMinderServer], "minderServer")
-      nonBlockingServerObject = client.get(classOf[IMinderServer], "minderServer", true)
+      syncRemoteCaller = client.get(classOf[IMinderServer], "minderServer")
+      asyncRemoteCaller = client.get(classOf[IMinderServer], "minderServer", true)
 
       //Map all the methods that are annotated as signals and slots.
       //this will be presented to the server. This is good to perform method resolution only once
@@ -85,7 +85,7 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
       for (x <- methodMap.values()) {
         keySet add x
       }
-      serverObject hello(wrapperIdentifier, keySet)
+      syncRemoteCaller hello(wrapperIdentifier, keySet)
     }
 
     override def disconnected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
@@ -127,16 +127,19 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     }
 
     if (signalMethod getName() equals ("getCurrentTestUserInfo")) {
-      nonBlockingServerObject.getUserInfo(testSession)
-    } else if(signalMethod getName() equals ("trigger")){
-      serverObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args))
+      asyncRemoteCaller.getUserInfo(testSession)
     } else {
+
+      val remoteCaller = if (signalMethod.getAnnotation(classOf[Signal]).async())
+        asyncRemoteCaller
+      else
+        syncRemoteCaller
       //now we should check whether there is an error, or this is a regular call.
       val error = wrapper.consumeError()
       if (error != null) {
-        nonBlockingServerObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
+        remoteCaller signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
       } else {
-        nonBlockingServerObject signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
+        remoteCaller signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
       }
     }
   }
