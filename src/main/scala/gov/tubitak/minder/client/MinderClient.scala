@@ -104,22 +104,20 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     * the appropriate slot
     */
   override def callSlot(testSession: TestSession, slotName: String, args: Array[Object]): Object = {
-    checkSession(testSession)
-    wrapper.setSessionId(testSession.getSession)
-    methodMap.get(slotName.replaceAll("\\s", "")).method.invoke(wrapper, args: _*)
+    synchronized {
+      wrapper.setSessionId(testSession.getSession)
+      val method = methodMap.get(slotName.replaceAll("\\s", "")).method
+      method.invoke(wrapper, args: _*)
+    }
   }
 
   def checkSession(sId: TestSession) {
-    //if (testSession == null || testSession != sId) {
-    //  throw new MinderException(MinderException.E_INVALID_SESSION)
-    //}
   }
 
   /**
     * The SUT is emitting a signal, lets invoke the server
     */
   override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
-    checkSession(testSession);
     val temp = if (null != wrapper.getSessionId) {
       new TestSession(wrapper.getSessionId)
     } else {
