@@ -1,18 +1,18 @@
 package gov.tubitak.minder.client
 
-import minderengine.Wrapper
+import minderengine.Adapter
 import org.apache.log4j.PropertyConfigurator
 
 /**
- * The entry point for a minder client application.
- */
+  * The entry point for a minder client application.
+  */
 object MinderClientApp {
 
   /**
     * Initialize the adapter mechanism
     *
     * this is deprecated please use init()
- *
+    *
     * @param args
     */
   @Deprecated
@@ -23,10 +23,10 @@ object MinderClientApp {
   /**
     * Initialize the adapter mechanism and return the created adapter.
     */
-  def init(): Wrapper ={
+  def init(): Adapter = {
     PropertyConfigurator.configure(classOf[MinderClient].getResource("/logging.properties"))
     val minderClient = new MinderClient
-    minderClient.wrapper
+    minderClient.adapter
   }
 
 }

@@ -32,27 +32,27 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
   }
 
   properties.setProperty(XoolaProperty.MODE, XoolaTierMode.CLIENT)
-  val wrapperName = properties.getProperty("WRAPPER_NAME")
-  val wrapperVersion = properties.getProperty("WRAPPER_VERSION")
-  val wrapperIdentifier = new AdapterIdentifier()
-  wrapperIdentifier.setName(wrapperName)
-  wrapperIdentifier.setVersion(wrapperVersion)
+  val adapterName = properties.getProperty("ADAPTER_NAME")
+  val adapterVersion = properties.getProperty("ADAPTER_VERSION")
+  val adapterIdentifier = new AdapterIdentifier()
+  adapterIdentifier.setName(adapterName)
+  adapterIdentifier.setVersion(adapterVersion)
 
-  //initialize the XOOLA protocol with wrapper name
-  properties.setProperty(XoolaProperty.CLIENTID, wrapperIdentifier.toString)
+  //initialize the XOOLA protocol with adapter name
+  properties.setProperty(XoolaProperty.CLIENTID, adapterIdentifier.toString)
   val client = Xoola.init(properties)
-  //create the minder client, providing the wrapper class name
-  println("The wrapper Identifier " + wrapperIdentifier)
-  println("The wrapper Class is " + properties.getProperty("WRAPPER_CLASS"))
-  val clazz: Class[Wrapper] =
+  //create the minder client, providing the adapter class name
+  println("The adapter Identifier " + adapterIdentifier)
+  println("The adapter Class is " + properties.getProperty("ADAPTER_CLASS"))
+  val clazz: Class[Adapter] =
     if (classLoader == null)
-      Class.forName(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
+      Class.forName(properties.getProperty("ADAPTER_CLASS")).asInstanceOf[Class[Adapter]]
     else
-      classLoader.loadClass(properties.getProperty("WRAPPER_CLASS")).asInstanceOf[Class[Wrapper]]
-  val wrapper = MinderUtils.createWrapper(clazz, this)
+      classLoader.loadClass(properties.getProperty("ADAPTER_CLASS")).asInstanceOf[Class[Adapter]]
+
+  val adapter = MinderUtils.createAdapter(clazz, this)
   client registerObject("minderClient", this)
   println("Connecting to server")
-
 
   var syncRemoteCaller: IMinderServer = null;
   var asyncRemoteCaller: IMinderServer = null;
@@ -85,7 +85,7 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
       for (x <- methodMap.values()) {
         keySet add x
       }
-      syncRemoteCaller hello(wrapperIdentifier, keySet)
+      syncRemoteCaller hello(adapterIdentifier, keySet)
     }
 
     override def disconnected(xoolaInvocationHandler: XoolaInvocationHandler, xoolaChannelState: XoolaChannelState): Unit = {
@@ -105,9 +105,9 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     */
   override def callSlot(testSession: TestSession, slotName: String, args: Array[Object]): Object = {
     synchronized {
-      wrapper.setSessionId(testSession.getSession)
+      adapter.setSessionId(testSession.getSession)
       val method = methodMap.get(slotName.replaceAll("\\s", "")).method
-      method.invoke(wrapper, args: _*)
+      method.invoke(adapter, args: _*)
     }
   }
 
@@ -118,8 +118,8 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
     * The SUT is emitting a signal, lets invoke the server
     */
   override def handleSignal(obj: Any, signalMethod: Method, args: Array[Object]): Object = {
-    val temp = if (null != wrapper.getSessionId) {
-      new TestSession(wrapper.getSessionId)
+    val temp = if (null != adapter.getSessionId) {
+      new TestSession(adapter.getSessionId)
     } else {
       testSession;
     }
@@ -133,35 +133,35 @@ class MinderClient(val properties: Properties, val classLoader: ClassLoader) ext
       else
         syncRemoteCaller
       //now we should check whether there is an error, or this is a regular call.
-      val error = wrapper.consumeError()
+      val error = adapter.consumeError()
       if (error != null) {
-        remoteCaller signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
+        remoteCaller signalEmitted(temp, adapterIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalErrorData(error));
       } else {
-        remoteCaller signalEmitted(temp, wrapperIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
+        remoteCaller signalEmitted(temp, adapterIdentifier, MethodContainer.generateMethodKey(signalMethod), new SignalCallData(args));
       }
     }
   }
 
   override def startTest(startTestObject: StartTestObject): Unit = {
-    println(wrapperIdentifier + " starttest " + startTestObject.getSession.getSession)
+    println(adapterIdentifier + " starttest " + startTestObject.getSession.getSession)
     this testSession = startTestObject.getSession
-    wrapper.setDefaultSession(testSession.getSession)
-    wrapper startTest startTestObject
+    adapter.setDefaultSession(testSession.getSession)
+    adapter startTest startTestObject
   }
 
   override def finishTest(finishTestObject: FinishTestObject): Unit = {
-    wrapper finishTest finishTestObject;
+    adapter finishTest finishTestObject;
     this testSession = null
   }
 
   override def getSUTIdentifiers(): SUTIdentifiers = {
-    wrapper getSUTIdentifiers
+    adapter getSUTIdentifiers
   }
 }
 
 object MinderClient {
   def readProps: Properties = {
-    val propertyFile = System.getProperty("propertyFile", "wrapper.properties")
+    val propertyFile = System.getProperty("propertyFile", "adapter.properties")
     val props = new Properties()
     if (propertyFile != null && new File(propertyFile).exists()) {
       println("Reading properties from alternate locatiom: " + propertyFile)
@@ -169,7 +169,7 @@ object MinderClient {
       props load ins;
       ins.close()
     } else {
-      val res = System.getProperty("propertyResource", "wrapper.properties")
+      val res = System.getProperty("propertyResource", "adapter.properties")
       var url = classOf[MinderClient].getResource(res)
 
       if (url == null) {
@@ -177,7 +177,7 @@ object MinderClient {
         url = Thread.currentThread().getContextClassLoader().getResource(res)
       }
       if (url == null) {
-        throw new scala.IllegalArgumentException("Couldn't load wrapper properties resource [" + res + "]")
+        throw new scala.IllegalArgumentException("Couldn't load adapter properties resource [" + res + "]")
       }
 
       val is = url.openStream()
