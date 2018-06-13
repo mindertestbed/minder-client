@@ -1,10 +1,10 @@
-organization := "gov.tubitak.minder"
+organization := "com.yerlibilgin.minder"
 
 name := "minder-client"
 
-version := "1.0.0"
+version := "1.1.0"
 
-resolvers += "Eid public repository" at "http://193.140.74.199:8081/nexus/content/groups/public/"
+resolvers += "Sonatype snapshots" at "https://oss.sonatype.org/content/repositories/snapshots/"
 
 resolvers += Resolver.mavenLocal
 
@@ -17,16 +17,10 @@ crossPaths := false
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
-  "org.scala-lang" % "scala-library" % "2.11.7",
-  "org.scala-lang" % "scala-reflect" % "2.11.7",
-  "org.scala-lang" % "scala-actors" % "2.11.7",
-  "org.scala-lang" % "scala-compiler" % "2.11.7",
   "log4j" % "log4j" % "1.2.16",
   "org.beybunproject" % "xoola" % "1.3.0",
-  "gov.tubitak.minder" % "minder-common" % "1.0.0",
-  "org.specs2" %% "specs2-junit" % "2.3.12" % "test"
+  "com.yerlibilgin.minder" % "minder-common" % "1.1.0",
+  "org.specs2" %% "specs2-junit" % "4.0.2" % Test
 )
-
-publishTo := Some("eid releases" at "http://193.140.74.199:8081/nexus/content/repositories/releases")
 
 credentials += Credentials(Path.userHome / ".ivy2" / ".credentials")
