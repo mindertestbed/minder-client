@@ -17,8 +17,8 @@ crossPaths := false
 scalaVersion := "2.11.7"
 
 libraryDependencies ++= Seq(
-  "log4j" % "log4j" % "1.2.16",
-  "org.beybunproject" % "xoola" % "1.3.0",
+  "org.slf4j" % "slf4j-api" % "1.7.25",
+  "gov.tubitak" % "xoola" % "1.3.4",
   "com.yerlibilgin.minder" % "minder-common" % "1.1.0",
   "org.specs2" %% "specs2-junit" % "4.0.2" % Test
 )

@@ -1,7 +1,6 @@
 package gov.tubitak.minder.client
 
 import minderengine.Adapter
-import org.apache.log4j.PropertyConfigurator
 
 /**
   * The entry point for a minder client application.
@@ -24,7 +23,6 @@ object MinderClientApp {
     * Initialize the adapter mechanism and return the created adapter.
     */
   def init(): Adapter = {
-    PropertyConfigurator.configure(classOf[MinderClient].getResource("/logging.properties"))
     val minderClient = new MinderClient
     minderClient.adapter
   }

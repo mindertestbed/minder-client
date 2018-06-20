@@ -6,7 +6,7 @@ import java.util
 import java.util.{HashMap, Properties}
 
 import minderengine._
-import org.interop.xoola.core._
+import gov.tubitak.xoola.core._
 
 class MinderClient(val properties: Properties, val classLoader: ClassLoader) extends IMinderClient with ISignalHandler {
 
